@@ -100,7 +100,10 @@ export default class SystemFormatter extends AMDFormatter {
     var right = objectIdentifier;
 
     var block = t.blockStatement([
-      t.expressionStatement(this.buildExportCall(leftIdentifier, valIdentifier))
+      t.ifStatement(
+        t.binaryExpression("!==", leftIdentifier, t.literal("default")),
+        t.expressionStatement(this.buildExportCall(leftIdentifier, valIdentifier))
+      )
     ]);
 
     return this._addImportSource(t.forInStatement(left, right, block), node);

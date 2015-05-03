@@ -77,6 +77,7 @@ export default class File {
     "bind",
     "define-property",
     "async-to-generator",
+    "interop-export-wildcard",
     "interop-require-wildcard",
     "interop-require-default",
     "typeof",
@@ -387,6 +388,7 @@ export default class File {
         unique: true
       });
     }
+
     return uid;
   }
 
