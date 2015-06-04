@@ -107,30 +107,10 @@ export function CatchClause(node, parent, scope, file) {
   node.body.body = nodes.concat(node.body.body);
 }
 
-export function ExpressionStatement(node, parent, scope, file) {
-  var expr = node.expression;
-  if (expr.type !== "AssignmentExpression") return;
-  if (!t.isPattern(expr.left)) return;
-  if (this.isCompletionRecord()) return;
-
-  var destructuring = new DestructuringTransformer({
-    operator: expr.operator,
-    scope:    scope,
-    file:     file,
-  });
-
-  return destructuring.init(expr.left, expr.right);
-}
-
 export function AssignmentExpression(node, parent, scope, file) {
   if (!t.isPattern(node.left)) return;
 
-  var ref = scope.generateUidIdentifier("temp");
-
   var nodes = [];
-  nodes.push(t.variableDeclaration("var", [
-    t.variableDeclarator(ref, node.right)
-  ]));
 
   var destructuring = new DestructuringTransformer({
     operator: node.operator,
@@ -139,13 +119,24 @@ export function AssignmentExpression(node, parent, scope, file) {
     nodes: nodes
   });
 
-  if (t.isArrayExpression(node.right)) {
-    destructuring.arrays[ref.name] = true;
+  var ref;
+  if (this.isCompletionRecord() || !this.parentPath.isExpressionStatement()) {
+    ref = scope.generateUidIdentifierBasedOnNode(node.right, "ref");
+
+    nodes.push(t.variableDeclaration("var", [
+      t.variableDeclarator(ref, node.right)
+    ]));
+
+    if (t.isArrayExpression(node.right)) {
+      destructuring.arrays[ref.name] = true;
+    }
   }
 
-  destructuring.init(node.left, ref);
+  destructuring.init(node.left, ref || node.right);
 
-  nodes.push(t.expressionStatement(ref));
+  if (ref) {
+    nodes.push(t.expressionStatement(ref));
+  }
 
   return nodes;
 }
@@ -160,7 +151,7 @@ function variableDeclarationHasPattern(node) {
 }
 
 export function VariableDeclaration(node, parent, scope, file) {
-  if (t.isForInStatement(parent) || t.isForOfStatement(parent)) return;
+  if (t.isForXStatement(parent)) return;
   if (!variableDeclarationHasPattern(node)) return;
 
   var nodes = [];
@@ -498,7 +489,6 @@ class DestructuringTransformer {
     // trying to destructure a value that we can't evaluate more than once so we
     // need to save it to a variable
 
-    var shouldMemoise = true;
     if (!t.isArrayExpression(ref) && !t.isMemberExpression(ref)) {
       var memo = this.scope.maybeGenerateMemoised(ref, true);
       if (memo) {

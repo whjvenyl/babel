@@ -7,45 +7,43 @@
 import clone from "lodash/lang/clone";
 import * as t from "../../../types";
 
+function getDeclar(node) {
+  var declar = node.declaration;
+  t.inheritsComments(declar, node);
+  t.removeComments(node);
+  declar._ignoreUserWhitespace = true;
+  return declar;
+}
+
 export var metadata = {
   group: "builtin-setup"
 };
 
-export function ImportDeclaration(node, parent, scope, file) {
-  if (node.source) {
-    node.source.value = file.resolveModuleSource(node.source.value);
-  }
-}
-
-export { ImportDeclaration as ExportAllDeclaration };
-
 export function ExportDefaultDeclaration(node, parent, scope) {
-  ImportDeclaration.apply(this, arguments);
-
   var declar = node.declaration;
-
-  var getDeclar = function () {
-    declar._ignoreUserWhitespace = true;
-    return declar;
-  };
 
   if (t.isClassDeclaration(declar)) {
     // export default class Foo {};
+    let nodes = [getDeclar(node), node];
     node.declaration = declar.id;
-    return [getDeclar(), node];
+    return nodes;
   } else if (t.isClassExpression(declar)) {
     // export default class {};
     var temp = scope.generateUidIdentifier("default");
-    declar = t.variableDeclaration("var", [
+    node.declaration = t.variableDeclaration("var", [
       t.variableDeclarator(temp, declar)
     ]);
+
+    let nodes = [getDeclar(node), node];
     node.declaration = temp;
-    return [getDeclar(), node];
+    return nodes;
   } else if (t.isFunctionDeclaration(declar)) {
     // export default function Foo() {}
     node._blockHoist = 2;
+
+    let nodes = [getDeclar(node), node];
     node.declaration = declar.id;
-    return [getDeclar(), node];
+    return nodes;
   }
 }
 
@@ -54,26 +52,23 @@ function buildExportSpecifier(id) {
 }
 
 export function ExportNamedDeclaration(node, parent, scope) {
-  ImportDeclaration.apply(this, arguments);
-
   var declar = node.declaration;
-
-  var getDeclar = function () {
-    declar._ignoreUserWhitespace = true;
-    return declar;
-  };
 
   if (t.isClassDeclaration(declar)) {
     // export class Foo {}
     node.specifiers  = [buildExportSpecifier(declar.id)];
+
+    let nodes = [getDeclar(node), node];
     node.declaration = null;
-    return [getDeclar(), node];
+    return nodes;
   } else if (t.isFunctionDeclaration(declar)) {
     // export function Foo() {}
     node.specifiers  = [buildExportSpecifier(declar.id)];
-    node.declaration = null;
     node._blockHoist = 2;
-    return [getDeclar(), node];
+
+    let nodes = [getDeclar(node), node];
+    node.declaration = null;
+    return nodes;
   } else if (t.isVariableDeclaration(declar)) {
     // export var foo = "bar";
     var specifiers = [];
@@ -85,18 +80,28 @@ export function ExportNamedDeclaration(node, parent, scope) {
   }
 }
 
-export function Program(node) {
-  var imports = [];
-  var rest = [];
+export var Program = {
+  enter(node) {
+    var imports = [];
+    var rest = [];
 
-  for (var i = 0; i < node.body.length; i++) {
-    var bodyNode = node.body[i];
-    if (t.isImportDeclaration(bodyNode)) {
-      imports.push(bodyNode);
-    } else {
-      rest.push(bodyNode);
+    for (var i = 0; i < node.body.length; i++) {
+      var bodyNode = node.body[i];
+      if (t.isImportDeclaration(bodyNode)) {
+        imports.push(bodyNode);
+      } else {
+        rest.push(bodyNode);
+      }
+    }
+
+    node.body = imports.concat(rest);
+  },
+
+  exit(node, parent, scope, file) {
+    if (!file.transformers["es6.modules"].canTransform()) return;
+
+    if (file.moduleFormatter.setup) {
+      file.moduleFormatter.setup();
     }
   }
-
-  node.body = imports.concat(rest);
-}
+};

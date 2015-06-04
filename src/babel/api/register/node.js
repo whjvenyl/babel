@@ -6,7 +6,7 @@ import * as babel from "../node";
 import each from "lodash/collection/each";
 import * as util from  "../../util";
 import fs from "fs";
-import slash from "slash";
+import path from "path";
 
 sourceMapSupport.install({
   handleUncaughtExceptions: false,
@@ -38,20 +38,29 @@ var only;
 var oldHandlers   = {};
 var maps          = {};
 
+var cwd = require.main ? require.main.filename : process.cwd();
+
+var getRelativePath = function (filename){
+  return path.relative(cwd, filename);
+};
+
 var mtime = function (filename) {
   return +fs.statSync(filename).mtime;
 };
 
-var compile = function (filename) {
+var compile = function (filename, opts = {}) {
   var result;
 
-  var opts = extend({}, transformOpts);
+  opts = extend(opts, transformOpts);
 
   // this will be done when the file is transformed anyway but we need all
   // the options so we can generate the cache key
   resolveRc(filename, opts);
 
   var cacheKey = `${filename}:${JSON.stringify(opts)}:${babel.version}`;
+
+  var env = process.env.BABEL_ENV || process.env.NODE_ENV;
+  if (env) cacheKey += `:${env}`;
 
   if (cache) {
     var cached = cache[cacheKey];
@@ -79,7 +88,7 @@ var compile = function (filename) {
 
 var shouldIgnore = function (filename) {
   if (!ignore && !only) {
-    return /node_modules/.test(filename);
+    return getRelativePath(filename).split(path.sep).indexOf("node_modules") >= 0;
   } else {
     return util.shouldIgnore(filename, ignore || [], only || []);
   }
@@ -95,7 +104,9 @@ if (process.env.running_under_istanbul) {
   fs.readFileSync = function (filename) {
     if (istanbulMonkey[filename]) {
       delete istanbulMonkey[filename];
-      var code = compile(filename);
+      var code = compile(filename, {
+        attachAuxiliaryComment: "istanbul ignore next"
+      });
       istanbulMonkey[filename] = true;
       return code;
     } else {
@@ -161,4 +172,4 @@ export default function (opts = {}) {
   delete opts.only;
 
   extend(transformOpts, opts);
-};
+}

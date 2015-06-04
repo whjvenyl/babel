@@ -35,11 +35,12 @@ export default class PluginManager {
     var match = name.match(/^(.*?):(after|before)$/);
     if (match) [, name, position] = match;
 
-    var loc = util.resolveRelative(name) || util.resolveRelative(`babel-plugin-${name}`);
+    var loc = util.resolveRelative(`babel-plugin-${name}`) || util.resolveRelative(name);
     if (loc) {
+      var plugin = require(loc);
       return {
         position: position,
-        plugin:   require(loc)
+        plugin:   plugin.default || plugin
       };
     } else {
       throw new ReferenceError(messages.get("pluginUnknown", name));

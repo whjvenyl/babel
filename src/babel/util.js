@@ -76,8 +76,9 @@ export function regexify(val: any): RegExp {
     // normalise path separators
     val = slash(val);
 
-    // remove relative separator if present
-    if (startsWith(val, "./")) val = val.slice(2);
+    // remove starting wildcards or relative separator if present
+    if (startsWith(val, "./") || startsWith(val, "*/")) val = val.slice(2);
+    if (startsWith(val, "**/")) val = val.slice(3);
 
     var regex = minimatch.makeRe(val, { nocase: true });
     return new RegExp(regex.source.slice(1, -1), "i");
@@ -111,12 +112,12 @@ export function shouldIgnore(filename, ignore, only) {
   filename = slash(filename);
 
   if (only.length) {
-    for (var pattern of (only: Array)) {
+    for (let pattern of (only: Array)) {
       if (pattern.test(filename)) return false;
     }
     return true;
   } else if (ignore.length) {
-    for (var pattern of (ignore: Array)) {
+    for (let pattern of (ignore: Array)) {
       if (pattern.test(filename)) return true;
     }
   }
@@ -125,6 +126,7 @@ export function shouldIgnore(filename, ignore, only) {
 }
 
 var templateVisitor = {
+  noScope: true,
   enter(node, parent, scope, nodes) {
     if (t.isExpressionStatement(node)) {
       node = node.expression;

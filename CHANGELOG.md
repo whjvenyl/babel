@@ -13,6 +13,51 @@ _Note: Gaps between patch versions are faulty/broken releases._
 
 See [CHANGELOG - 6to5](CHANGELOG-6to5.md) for the pre-4.0.0 version changelog.
 
+## 5.4.7
+
+ * **Bug Fix**
+  * Don't consider `JSXAttribute` `names` to be valid `ReferencedIdentifier`s.
+
+## 5.4.6
+
+ * **Bug Fix**
+  * Fix `spec.functionName` transformer incorrectly attempting to rename a binding that doesn't exist as it's a global.
+ * **Internal**
+  * Deprecate custom module formatters.
+
+## 5.4.5
+
+ * **Bug Fix**
+  * Add `JSXIdentifier` as a valid `ReferencedIdentifier` visitor virtual type.
+  * Ignore `CallExpression` `_prettyCall` when the `retainLines` option is enabled.
+  * Inherit comments to new declaration node when exploding module declarations.
+  * Fix `es6.tailCall` transformer failing on calls that exceed the max parameters of the function.
+
+## 5.4.4
+
+ * **Bug Fix**
+  * Fix bug where replacing variable declarations in the head of a `for` loop would turn them into `ExpressionStatement`s.
+  * Fix renaming of assignment expressions that were non-identifiers ie. patterns.
+  * Force space before `class` `id` to avoid breaking named classes when using `compact` mode.
+  * Add assignment pattern explosion to avoid initial duplicate nodes.
+  * Ignore this and arguments when performing TCO on shadowed functions.
+ * **Polish**
+  * Rename `sourceMapName` option to `sourceMapTarget`. Thanks [@getify](https://github.com/getify)!
+  * Better detection of completion records, ignore those in `Function`s.
+  * Clarified descriptions of the options that are enabled by default.
+  * Resolve `\`babel-plugin-${name}\`` plugin names **before** just checking the `name`. Thanks [@jquense](https://github.com/jquense)!
+  * Update AMD module formatter to add import default remapping.
+
+## 5.4.3
+
+ * **Bug Fix**
+  * Fix `module` being incorrectly rewritten when used as in an export declaration.
+  * When performing single-reference inlining, ensure that the single reference isn't a child of the binding itself.
+  * Fix a bug in `minification.deadCodeElimination` where a new binding instance was being created for local class bindings instead of just inheriting the parent one.
+  * Fix bug with paren printing in `compact` and `retainLines` mode where a left paren was already printed before catching up.
+ * **Internal**
+  * Handle contexts for paths much better. This will ensure that the path node location info is in sync.
+
 ## 5.4.2
 
  * **Polish**

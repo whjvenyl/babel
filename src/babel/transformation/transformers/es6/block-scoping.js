@@ -1,3 +1,6 @@
+import type NodePath from "../../../traversal/path";
+import type Scope from "../../../traversal/scope";
+import type File from "../../file";
 import traverse from "../../../traversal";
 import object from "../../../helpers/object";
 import * as util from  "../../../util";
@@ -84,8 +87,6 @@ export function BlockStatement(block, parent, scope, file) {
 export { BlockStatement as Program };
 
 function replace(node, parent, scope, remaps) {
-  if (!t.isReferencedIdentifier(node, parent)) return;
-
   var remap = remaps[node.name];
   if (!remap) return;
 
@@ -100,11 +101,21 @@ function replace(node, parent, scope, remaps) {
 }
 
 var replaceVisitor = {
-  enter: replace
+  ReferencedIdentifier: replace,
+
+  AssignmentExpression(node, parent, scope, remaps) {
+    var ids = this.getBindingIdentifiers();
+    for (var name in ids) {
+      replace(ids[name], node, scope, remaps);
+    }
+  },
 };
 
 function traverseReplace(node, parent, scope, remaps) {
-  replace(node, parent, scope, remaps);
+  if (t.isIdentifier(node)) {
+    replace(node, parent, scope, remaps);
+  }
+
   scope.traverse(node, replaceVisitor, remaps);
 }
 
@@ -250,7 +261,7 @@ class BlockScoping {
    * Description
    */
 
-  constructor(loopPath?: TraversalPath, blockPath: TraversalPath, parent: Object, scope: Scope, file: File) {
+  constructor(loopPath?: NodePath, blockPath: NodePath, parent: Object, scope: Scope, file: File) {
     this.parent = parent;
     this.scope  = scope;
     this.file   = file;
@@ -589,7 +600,6 @@ class BlockScoping {
       t.variableDeclarator(ret, call)
     ]));
 
-    var loop = this.loop;
     var retCheck;
     var has = this.has;
     var cases = [];

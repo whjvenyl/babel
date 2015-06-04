@@ -1,5 +1,4 @@
-import TraversalPath from "./path";
-import compact from "lodash/array/compact";
+import NodePath from "./path";
 import * as t from "../types";
 
 export default class TraversalContext {
@@ -15,13 +14,21 @@ export default class TraversalContext {
     return !!(this.opts.enter || this.opts.exit || this.opts[node.type] || (keys && keys.length));
   }
 
-  create(node, obj, key) {
-    return TraversalPath.get(this.parentPath, this, node, obj, key);
+  create(node, obj, key, containerKey) {
+    var path = NodePath.get({
+      parentPath: this.parentPath,
+      parent: node,
+      container: obj,
+      key: key,
+      containerKey: containerKey
+    });
+    path.unshiftContext(this);
+    return path;
   }
 
-  visitMultiple(nodes, node, key) {
+  visitMultiple(container, parent, containerKey) {
     // nothing to traverse!
-    if (nodes.length === 0) return false;
+    if (container.length === 0) return false;
 
     var visited = [];
 
@@ -29,20 +36,19 @@ export default class TraversalContext {
     var stop  = false;
 
     // build up initial queue
-    for (let i = 0; i < nodes.length; i++) {
-      var self = nodes[i];
+    for (let key = 0; key < container.length; key++) {
+      var self = container[key];
       if (self && this.shouldVisit(self)) {
-        queue.push(this.create(node, nodes, i));
+        queue.push(this.create(parent, container, key, containerKey));
       }
     }
 
     // visit the queue
-    for (let i = 0; i < queue.length; i++) {
-      var path = queue[i];
+    for (let path of (queue: Array)) {
+      path.resync();
+
       if (visited.indexOf(path.node) >= 0) continue;
       visited.push(path.node);
-
-      path.setContext(this.parentPath, this, path.key);
 
       if (path.visit()) {
         stop = true;
@@ -50,12 +56,20 @@ export default class TraversalContext {
       }
     }
 
+    for (let path of (queue: Array)) {
+      path.shiftContext();
+    }
+
+    this.queue = null;
+
     return stop;
   }
 
   visitSingle(node, key) {
     if (this.shouldVisit(node[key])) {
-      return this.create(node, node, key).visit();
+      var path = this.create(node, node, key);
+      path.visit();
+      path.shiftContext();
     }
   }
 

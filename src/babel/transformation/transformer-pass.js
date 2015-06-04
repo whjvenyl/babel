@@ -1,5 +1,6 @@
-import includes from "lodash/collection/includes";
+import type Transformer from "./transformer";
 import traverse from "../traversal";
+import type File from "./file";
 
 /**
  * This class is responsible for traversing over the provided `File`s
@@ -11,7 +12,6 @@ export default class TransformerPass {
     this.transformer = transformer;
     this.handlers    = transformer.handlers;
     this.file        = file;
-    this.ran         = false;
     this.key         = transformer.key;
   }
 
@@ -22,13 +22,8 @@ export default class TransformerPass {
 
   transform() {
     var file = this.file;
-
     file.log.debug(`Start transformer ${this.key}`);
-
     traverse(file.ast, this.handlers, file.scope, file);
-
     file.log.debug(`Finish transformer ${this.key}`);
-
-    this.ran = true;
   }
 }

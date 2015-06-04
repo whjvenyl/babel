@@ -7,7 +7,7 @@ export default {
   "minification.removeDebugger":           require("./minification/remove-debugger"),
   "minification.removeConsole":            require("./minification/remove-console"),
   "utility.inlineEnvironmentVariables":    require("./utility/inline-environment-variables"),
-  "minification.inlineExpressions":        require("./minification/inline-expressions"),
+  "minification.constantFolding":          require("./minification/constant-folding"),
   "minification.deadCodeElimination":      require("./minification/dead-code-elimination"),
   _modules:                                require("./internal/modules"),
   "spec.functionName":                     require("./spec/function-name"),
@@ -51,7 +51,6 @@ export default {
   "es6.spec.symbols":                      require("./es6/spec.symbols"),
   "es7.functionBind":                      require("./es7/function-bind"),
   "spec.undefinedToVoid":                  require("./spec/undefined-to-void"),
-  jscript:                                 require("./other/jscript"),
   flow:                                    require("./other/flow"),
 
   //- builtin-advanced
@@ -60,12 +59,10 @@ export default {
   "es6.spec.blockScoping":                 require("./es6/spec.block-scoping"),
   reactCompat:                             require("./other/react-compat"),
   react:                                   require("./other/react"),
+  regenerator:                             require("./other/regenerator"),
 
   // es6 syntax transformation is **forbidden** past this point since regenerator will chuck a massive
   // hissy fit
-
-  //- regenerator
-  regenerator:                             require("./other/regenerator"),
 
   //- builtin-modules
   runtime:                                 require("./other/runtime"),
@@ -83,4 +80,5 @@ export default {
   "minification.memberExpressionLiterals": require("./minification/member-expression-literals"),
   "minification.propertyLiterals":         require("./minification/property-literals"),
   _blockHoist:                             require("./internal/block-hoist"),
+  jscript:                                 require("./other/jscript"),
 };

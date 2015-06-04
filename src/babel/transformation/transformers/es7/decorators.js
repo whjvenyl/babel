@@ -10,8 +10,8 @@ export var metadata = {
 
 export function ObjectExpression(node, parent, scope, file) {
   var hasDecorators = false;
-  for (var i = 0; i < node.properties.length; i++) {
-    var prop = node.properties[i];
+  for (let i = 0; i < node.properties.length; i++) {
+    let prop = node.properties[i];
     if (prop.decorators) {
       hasDecorators = true;
       break;
@@ -21,12 +21,12 @@ export function ObjectExpression(node, parent, scope, file) {
 
   var mutatorMap = {};
 
-  for (var i = 0; i < node.properties.length; i++) {
-    var prop = node.properties[i];
+  for (let i = 0; i < node.properties.length; i++) {
+    let prop = node.properties[i];
     if (prop.decorators) memoiseDecorators(prop.decorators, scope);
 
 
-    if (prop.kind === "init") {
+    if (prop.kind === "init" && !prop.method) {
       prop.kind = "";
       prop.value = t.functionExpression(null, [], t.blockStatement([
         t.returnStatement(prop.value)

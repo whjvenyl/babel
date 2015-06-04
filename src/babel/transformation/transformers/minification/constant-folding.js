@@ -6,12 +6,8 @@ export var metadata = {
 };
 
 export var Expression = {
-  exit(node, parent, scope) {
+  exit() {
     var res = this.evaluate();
     if (res.confident) return t.valueToNode(res.value);
   }
 };
-
-export function Identifier() {
-  // override Expression
-}

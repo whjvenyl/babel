@@ -66,8 +66,13 @@ export function isReferenced(node: Object, parent: Object): boolean {
     case "ImportNamespaceSpecifier":
       return false;
 
+    // no: <div NODE="foo" />
+    case "JSXAttribute":
+      return parent.name !== node;
+
     // no: import { NODE as foo } from "foo";
     // no: import { foo as NODE } from "foo";
+    // no: import NODE from "bar";
     case "ImportSpecifier":
       return false;
 
@@ -102,25 +107,9 @@ export function isReferenced(node: Object, parent: Object): boolean {
     case "ObjectPattern":
     case "ArrayPattern":
       return false;
-
-    // no: import NODE from "bar";
-    case "ImportSpecifier":
-      return false;
-
-    // no: import * as NODE from "foo";
-    case "ImportNamespaceSpecifier":
-      return false;
   }
 
   return true;
-}
-
-/**
- * Check if the input `node` is an `Identifier` and `isReferenced`.
- */
-
-export function isReferencedIdentifier(node: Object, parent: Object, opts?: Object): boolean {
-  return (t.isIdentifier(node, opts) || t.isJSXIdentifier(node, opts)) && t.isReferenced(node, parent);
 }
 
 /**
@@ -166,7 +155,6 @@ export function isVar(node: Object): boolean {
 
 export function isSpecifierDefault(specifier: Object): boolean {
   return t.isImportDefaultSpecifier(specifier) ||
-         t.isExportDefaultSpecifier(specifier) ||
          t.isIdentifier(specifier.imported || specifier.exported, { name: "default" });
 }
 

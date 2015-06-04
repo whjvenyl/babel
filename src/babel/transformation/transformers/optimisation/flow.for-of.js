@@ -1,12 +1,11 @@
 import { _ForOfStatementArray } from "../es6/for-of";
-import * as t from "../../../types";
 
 export var metadata = {
   optional: true
 };
 
 export function ForOfStatement(node, parent, scope, file) {
-  if (this.get("right").isTypeGeneric("Array")) {
+  if (this.get("right").isTypeAnnotationGeneric("Array")) {
     return _ForOfStatementArray.call(this, node, scope, file);
   }
 }

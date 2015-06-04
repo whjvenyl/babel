@@ -3,16 +3,16 @@ export function ClassDeclaration(node, print) {
   this.push("class");
 
   if (node.id) {
-    this.space();
-    print(node.id);
+    this.push(" ");
+    print.plain(node.id);
   }
 
-  print(node.typeParameters);
+  print.plain(node.typeParameters);
 
   if (node.superClass) {
     this.push(" extends ");
-    print(node.superClass);
-    print(node.superTypeParameters);
+    print.plain(node.superClass);
+    print.plain(node.superTypeParameters);
   }
 
   if (node.implements) {
@@ -21,7 +21,7 @@ export function ClassDeclaration(node, print) {
   }
 
   this.space();
-  print(node.body);
+  print.plain(node.body);
 }
 
 export { ClassDeclaration as ClassExpression };
@@ -46,13 +46,13 @@ export function ClassProperty(node, print) {
   print.list(node.decorators);
 
   if (node.static) this.push("static ");
-  print(node.key);
-  print(node.typeAnnotation);
+  print.plain(node.key);
+  print.plain(node.typeAnnotation);
   if (node.value) {
     this.space();
     this.push("=");
     this.space();
-    print(node.value);
+    print.plain(node.value);
   }
   this.semicolon();
 }

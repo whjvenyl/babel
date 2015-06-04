@@ -6,8 +6,8 @@ import * as util from  "../../util";
 import * as t from "../../types";
 
 export default class AMDFormatter extends DefaultFormatter {
-  init() {
-    CommonFormatter.prototype._init.call(this, this.hasNonDefaultExports);
+  setup() {
+    CommonFormatter.prototype._setup.call(this, this.hasNonDefaultExports);
   }
 
   buildDependencyLiterals() {
@@ -92,9 +92,9 @@ export default class AMDFormatter extends DefaultFormatter {
       // import foo from "foo";
       var uid = this.scope.generateUidIdentifier(specifier.local.name);
       nodes.push(t.variableDeclaration("var", [
-        t.variableDeclarator(uid, t.callExpression(this.file.addHelper("interop-require"), [ref]))
+        t.variableDeclarator(uid, t.callExpression(this.file.addHelper("interop-require-default"), [ref]))
       ]));
-      ref = uid;
+      ref = t.memberExpression(uid, t.identifier("default"));
     } else {
       // import { foo } from "foo";
       var imported = specifier.imported;

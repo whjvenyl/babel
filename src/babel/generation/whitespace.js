@@ -1,5 +1,3 @@
-import sortBy from "lodash/collection/sortBy";
-
 /**
  * Returns `i`th number from `base`, continuing from 0 when `max` is reached.
  * Useful for shifting `for` loop by a fixed number but going over all items.
@@ -21,8 +19,8 @@ function getLookupIndex(i, base, max) {
 }
 
 export default class Whitespace {
-  constructor(tokens, comments) {
-    this.tokens = sortBy(tokens.concat(comments), "start");
+  constructor(tokens) {
+    this.tokens = tokens;
     this.used   = {};
 
     // Profiling this code shows that while generator passes over it, indexes
@@ -40,12 +38,11 @@ export default class Whitespace {
     var startToken;
     var endToken;
     var tokens = this.tokens;
-    var token;
 
     for (var j = 0; j < tokens.length; j++) {
       // optimize for forward traversal by shifting for loop index
       var i = getLookupIndex(j, this._lastFoundIndex, this.tokens.length);
-      token = tokens[i];
+      var token = tokens[i];
 
       // this is the token this node starts with
       if (node.start === token.start) {
@@ -64,17 +61,17 @@ export default class Whitespace {
     var startToken;
     var endToken;
     var tokens = this.tokens;
-    var token;
 
     for (var j = 0; j < tokens.length; j++) {
       // optimize for forward traversal by shifting for loop index
       var i = getLookupIndex(j, this._lastFoundIndex, this.tokens.length);
-      token = tokens[i];
+      var token = tokens[i];
 
       // this is the token this node ends with
       if (node.end === token.end) {
         startToken = token;
         endToken = tokens[i + 1];
+        if (endToken.type.label === ",") endToken = tokens[i + 2];
 
         this._lastFoundIndex = i;
         break;
@@ -85,7 +82,7 @@ export default class Whitespace {
       return 1;
     } else {
       var lines = this.getNewlinesBetween(startToken, endToken);
-      if (node.type === "Line" && !lines) {
+      if (node.type === "CommentLine" && !lines) {
         // line comment
         return 1;
       } else {

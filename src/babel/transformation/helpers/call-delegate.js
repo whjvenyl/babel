@@ -1,4 +1,3 @@
-import traverse from "../../traversal";
 import * as t from "../../types";
 
 var visitor = {
@@ -7,10 +6,10 @@ var visitor = {
       state.found = true;
       this.stop();
     }
+  },
 
-    if (this.isFunction()) {
-      this.skip();
-    }
+  Function() {
+    this.skip();
   }
 };
 

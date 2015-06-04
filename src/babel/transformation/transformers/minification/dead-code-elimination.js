@@ -33,23 +33,37 @@ export function ReferencedIdentifier(node, parent, scope) {
   }
   if (!replacement) return;
 
+  // ensure it's a "pure" type
+  if (!scope.isPure(replacement, true)) return;
+
+  if (t.isClass(replacement) || t.isFunction(replacement)) {
+    // don't change this if it's in a different scope, this can be bad
+    // for performance since it may be inside a loop or deeply nested in
+    // hot code
+    if (binding.path.scope.parent !== scope) return;
+  }
+
+  if (this.findParent((node) => node === replacement)) {
+    return;
+  }
+
   t.toExpression(replacement);
   scope.removeBinding(node.name);
-  binding.path.remove();
+  binding.path.dangerouslyRemove();
   return replacement;
 }
 
 export function FunctionDeclaration(node, parent, scope) {
   var bindingInfo = scope.getBinding(node.id.name);
   if (bindingInfo && !bindingInfo.referenced) {
-    this.remove();
+    this.dangerouslyRemove();
   }
 }
 
 export { FunctionDeclaration as ClassDeclaration };
 
 export function VariableDeclarator(node, parent, scope) {
-  if (!t.isIdentifier(node.id) || !scope.isPure(node.init)) return;
+  if (!t.isIdentifier(node.id) || !scope.isPure(node.init, true)) return;
   FunctionDeclaration.apply(this, arguments);
 }
 
@@ -62,8 +76,27 @@ export function ConditionalExpression(node, parent, scope) {
   }
 }
 
+export function BlockStatement(node) {
+  var paths = this.get("body");
+
+  var purge = false;
+
+  for (var i = 0; i < paths.length; i++) {
+    let path = paths[i];
+
+    if (!purge && path.isCompletionStatement()) {
+      purge = true;
+      continue;
+    }
+
+    if (purge && !path.isFunctionDeclaration()) {
+      path.dangerouslyRemove();
+    }
+  }
+}
+
 export var IfStatement = {
-  exit(node, parent, scope) {
+  exit(node) {
     var consequent = node.consequent;
     var alternate  = node.alternate;
     var test = node.test;
@@ -92,7 +125,7 @@ export var IfStatement = {
       if (alternate) {
         return toStatements(alternate);
       } else {
-        return this.remove();
+        return this.dangerouslyRemove();
       }
     }
 

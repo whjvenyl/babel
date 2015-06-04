@@ -1,5 +1,5 @@
-import * as react from "../../transformation/helpers/react";
-import * as t from "../../types";
+import * as react from "../../../transformation/helpers/react";
+import * as t from "../../../types";
 
 var referenceVisitor = {
   ReferencedIdentifier(node, parent, scope, state) {
@@ -69,7 +69,7 @@ export default class PathHoister {
     if (scope.path.isFunction()) {
       if (this.hasOwnParamBindings(scope)) {
         // should ignore this scope since it's ourselves
-        if (this.scope.is(scope)) return;
+        if (this.scope === scope) return;
 
         // needs to be attached to the body
         return scope.path.get("body").get("body")[0];
@@ -89,7 +89,7 @@ export default class PathHoister {
 
   hasOwnParamBindings(scope) {
     for (var name in this.bindings) {
-      if (!scope.hasOwnBinding(name)) continue
+      if (!scope.hasOwnBinding(name)) continue;
 
       var binding = this.bindings[name];
       if (binding.kind === "param") return true;
@@ -125,6 +125,6 @@ export default class PathHoister {
       uid = t.jSXExpressionContainer(uid);
     }
 
-    return uid;
+    this.path.replaceWith(uid);
   }
 }

@@ -1,7 +1,5 @@
-import * as t from "../../../types";
-
 export function Flow(node) {
-  this.remove();
+  this.dangerouslyRemove();
 }
 
 export function ClassProperty(node) {
@@ -24,9 +22,9 @@ export function TypeCastExpression(node) {
 }
 
 export function ImportDeclaration(node) {
-  if (node.isType) this.remove();
+  if (node.isType) this.dangerouslyRemove();
 }
 
 export function ExportDeclaration(node) {
-  if (this.get("declaration").isTypeAlias()) this.remove();
+  if (this.get("declaration").isTypeAlias()) this.dangerouslyRemove();
 }

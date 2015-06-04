@@ -1,7 +1,6 @@
 import reduceRight from "lodash/collection/reduceRight";
 import * as messages from "../../../messages";
 import flatten from "lodash/array/flatten";
-import traverse from "../../../traversal";
 import * as util from  "../../../util";
 import map from "lodash/collection/map";
 import * as t from "../../../types";
@@ -21,7 +20,7 @@ function returnBlock(expr) {
 }
 
 var visitor = {
-  enter(node, parent, scope, state) {
+  enter(node, parent) {
     if (t.isTryStatement(parent)) {
       if (node === parent.block) {
         this.skip();
@@ -35,7 +34,7 @@ var visitor = {
     return state.subTransform(node.argument);
   },
 
-  Function(node, parent, scope, state) {
+  Function() {
     this.skip();
   },
 
@@ -44,12 +43,14 @@ var visitor = {
   },
 
   ThisExpression(node, parent, scope, state) {
-    state.needsThis = true;
-    state.thisPaths.push(this);
+    if (!state.isShadowed) {
+      state.needsThis = true;
+      state.thisPaths.push(this);
+    }
   },
 
   ReferencedIdentifier(node, parent, scope, state) {
-    if (node.name === "arguments") {
+    if (node.name === "arguments" && (!state.isShadowed || node._shadowedFunctionLiteral)) {
       state.needsArguments = true;
       state.argumentsPaths.push(this);
     }
@@ -67,8 +68,9 @@ class TailCallTransformer {
     this.needsThis = false;
     this.thisPaths = [];
 
-    this.ownerId = path.node.id;
-    this.vars    = [];
+    this.isShadowed = path.isArrowFunctionExpression() || path.is("shadow");
+    this.ownerId    = path.node.id;
+    this.vars       = [];
 
     this.scope = scope;
     this.path  = path;
@@ -125,7 +127,6 @@ class TailCallTransformer {
   }
 
   run() {
-    var scope = this.scope;
     var node  = this.node;
 
     // only tail recursion can be optimized as for now, so we can skip anonymous
@@ -201,13 +202,14 @@ class TailCallTransformer {
     }
 
     if (this.needsArguments || this.setsArguments) {
-      for (var path of (this.argumentsPaths: Array)) {
+      for (let path of (this.argumentsPaths: Array)) {
         path.replaceWith(this.argumentsId);
       }
 
       var decl = t.variableDeclarator(this.argumentsId);
       if (this.argumentsId) {
         decl.init = t.identifier("arguments");
+        decl.init._shadowedFunctionLiteral = true;
       }
       topVars.push(decl);
     }
@@ -288,7 +290,8 @@ class TailCallTransformer {
   }
 
   subTransformCallExpression(node) {
-    var callee = node.callee, thisBinding, args;
+    var callee = node.callee;
+    var thisBinding, args;
 
     if (t.isMemberExpression(callee, { computed: false }) && t.isIdentifier(callee.property)) {
       switch (callee.property.name) {
@@ -298,6 +301,7 @@ class TailCallTransformer {
 
         case "apply":
           args = node.arguments[1] || t.identifier("undefined");
+          this.needsArguments = true;
           break;
 
         default:
@@ -331,6 +335,10 @@ class TailCallTransformer {
       args = t.arrayExpression(node.arguments);
     }
 
+    if (t.isArrayExpression(args) && args.elements.length > this.node.params.length) {
+      this.needsArguments = true;
+    }
+
     var argumentsId = this.getArgumentsId();
     var params      = this.getParams();
 
@@ -346,14 +354,14 @@ class TailCallTransformer {
       var elems = args.elements;
       for (let i = 0; i < elems.length && i < params.length; i++) {
         let param = params[i];
-        var elem = elems[i] || (elems[i] = t.identifier("undefined"));
+        let elem = elems[i] || (elems[i] = t.identifier("undefined"));
         if (!param._isDefaultPlaceholder) {
           elems[i] = t.assignmentExpression("=", param, elem);
         }
       }
 
       if (!this.needsArguments) {
-        for (var elem of (elems: Array)) {
+        for (let elem of (elems: Array)) {
           body.push(t.expressionStatement(elem));
         }
       }

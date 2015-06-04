@@ -1,9 +1,10 @@
-import * as virtualTypes from "./path/virtual-types";
+import * as virtualTypes from "./path/lib/virtual-types";
 import * as messages from "../messages";
 import * as t from "../types";
+import clone from "lodash/lang/clone";
 import esquery from "esquery";
 
-export function explode(visitor, mergeConflicts) {
+export function explode(visitor) {
   if (visitor._exploded) return visitor;
   visitor._exploded = true;
 
@@ -28,20 +29,22 @@ export function explode(visitor, mergeConflicts) {
     if (!wrapper) continue;
 
     // wrap all the functions
-    var fns = visitor[nodeType];
-    for (var type in fns) {
+    let fns = visitor[nodeType];
+    for (let type in fns) {
       fns[type] = wrapCheck(wrapper, fns[type]);
     }
 
     // clear it from the visitor
     delete visitor[nodeType];
 
-    if (wrapper.type) {
-      // merge the visitor if necessary or just put it back in
-      if (visitor[wrapper.type]) {
-        mergePair(visitor[wrapper.type], fns);
-      } else {
-        visitor[wrapper.type] = fns;
+    if (wrapper.types) {
+      for (let type of (wrapper.types: Array)) {
+        // merge the visitor if necessary or just put it back in
+        if (visitor[type]) {
+          mergePair(visitor[type], fns);
+        } else {
+          visitor[type] = fns;
+        }
       }
     } else {
       mergePair(visitor, fns);
@@ -52,22 +55,20 @@ export function explode(visitor, mergeConflicts) {
   for (let nodeType in visitor) {
     if (shouldIgnoreKey(nodeType)) continue;
 
-    var fns = visitor[nodeType];
+    let fns = visitor[nodeType];
 
     var aliases = t.FLIPPED_ALIAS_KEYS[nodeType];
     if (!aliases) continue;
 
-    // clear it form the visitor
+    // clear it from the visitor
     delete visitor[nodeType];
 
     for (var alias of (aliases: Array)) {
       var existing = visitor[alias];
       if (existing) {
-        if (mergeConflicts) {
-          mergePair(existing, fns);
-        }
+        mergePair(existing, fns);
       } else {
-        visitor[alias] = fns;
+        visitor[alias] = clone(fns);
       }
     }
   }
@@ -170,6 +171,6 @@ function shouldIgnoreKey(key) {
 
 function mergePair(dest, src) {
   for (var key in src) {
-    dest[key] = (dest[key] || []).concat(src[key]);
+    dest[key] = [].concat(dest[key] || [], src[key]);
   }
 }
